@@ -60,7 +60,11 @@ function formatTable(analysis: PRAnalysis, verbose: boolean): string {
   });
 
   for (const file of analysis.files) {
-    const factors = [...file.likelihood.factors, ...file.severity.factors];
+    const factors = [
+      ...file.likelihood.factors,
+      ...file.severity.factors,
+      ...(file.coverage?.factors ?? []),
+    ];
     const row = [
       colorize(file.priorityLevel.toUpperCase(), file.priorityLevel),
       file.priorityScore.toString(),

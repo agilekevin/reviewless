@@ -1,6 +1,7 @@
 import type { PRFile, PRDetails } from "./github.js";
 import { calculateLikelihood, type LikelihoodScore } from "./likelihood.js";
 import { calculateSeverity, type SeverityScore } from "./severity.js";
+import { analyzeCoverage, type CoverageAnalysis } from "./coverage.js";
 
 export interface FileAnalysis {
   filename: string;
@@ -8,6 +9,7 @@ export interface FileAnalysis {
   changes: number;
   likelihood: LikelihoodScore;
   severity: SeverityScore;
+  coverage: CoverageAnalysis | null;
   priorityScore: number;
   priorityLevel: "critical" | "high" | "medium" | "low";
 }
@@ -33,7 +35,11 @@ export interface PRAnalysis {
 // Priority score formula based on document:
 // "The framework suggests combining likelihood and severity scores"
 // We use a weighted combination with modified tests as primary signal
-function calculatePriorityScore(likelihood: LikelihoodScore, severity: SeverityScore): number {
+function calculatePriorityScore(
+  likelihood: LikelihoodScore,
+  severity: SeverityScore,
+  coverage: CoverageAnalysis | null
+): number {
   // Base score: average of likelihood and severity
   const baseScore = (likelihood.total + severity.total) / 2;
 
@@ -43,7 +49,10 @@ function calculatePriorityScore(likelihood: LikelihoodScore, severity: SeverityS
   // Boost for security issues
   const securityBoost = severity.security > 20 ? 10 : 0;
 
-  return Math.min(100, Math.round(baseScore + testBoost + securityBoost));
+  // Coverage risk from test file relationship
+  const coverageRisk = coverage?.coverageRisk ?? 0;
+
+  return Math.min(100, Math.round(baseScore + testBoost + securityBoost + coverageRisk));
 }
 
 function getPriorityLevel(score: number): FileAnalysis["priorityLevel"] {
@@ -53,10 +62,14 @@ function getPriorityLevel(score: number): FileAnalysis["priorityLevel"] {
   return "low";
 }
 
-export function analyzeFile(file: PRFile): FileAnalysis {
+export function analyzeFile(
+  file: PRFile,
+  coverageMap: Map<string, CoverageAnalysis>
+): FileAnalysis {
   const likelihood = calculateLikelihood(file);
   const severity = calculateSeverity(file);
-  const priorityScore = calculatePriorityScore(likelihood, severity);
+  const coverage = coverageMap.get(file.filename) ?? null;
+  const priorityScore = calculatePriorityScore(likelihood, severity, coverage);
 
   return {
     filename: file.filename,
@@ -64,13 +77,21 @@ export function analyzeFile(file: PRFile): FileAnalysis {
     changes: file.changes,
     likelihood,
     severity,
+    coverage,
     priorityScore,
     priorityLevel: getPriorityLevel(priorityScore),
   };
 }
 
 export function analyzePR(pr: PRDetails): PRAnalysis {
-  const files = pr.files.map(analyzeFile);
+  // Analyze coverage relationships between source and test files
+  const coverageAnalyses = analyzeCoverage(pr.files);
+  const coverageMap = new Map<string, CoverageAnalysis>();
+  for (const analysis of coverageAnalyses) {
+    coverageMap.set(analysis.sourceFile, analysis);
+  }
+
+  const files = pr.files.map((file) => analyzeFile(file, coverageMap));
 
   // Sort by priority score (highest first)
   files.sort((a, b) => b.priorityScore - a.priorityScore);
