@@ -1,0 +1,33 @@
+{
+  "name": "reviewless",
+  "version": "1.0.0",
+  "description": "PR analyzer that outputs review priority scores for each file",
+  "main": "dist/index.js",
+  "bin": {
+    "reviewless": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/cli.ts",
+    "dev": "tsx watch src/cli.ts"
+  },
+  "keywords": [
+    "pr",
+    "review",
+    "analyzer",
+    "github"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "@types/node": "^25.0.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.2",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}
