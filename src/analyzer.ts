@@ -62,6 +62,25 @@ function getPriorityLevel(score: number): FileAnalysis["priorityLevel"] {
   return "low";
 }
 
+// Generated/lock files that don't need code review
+const SKIP_PATTERNS = [
+  /\.lock$/,                    // uv.lock, Cargo.lock, etc.
+  /package-lock\.json$/,
+  /yarn\.lock$/,
+  /pnpm-lock\.yaml$/,
+  /Gemfile\.lock$/,
+  /poetry\.lock$/,
+  /composer\.lock$/,
+  /\.min\.(js|css)$/,          // Minified files
+  /\.generated\./,             // Explicitly generated files
+  /\/vendor\//,                // Vendored dependencies
+  /\/node_modules\//,          // Should never be in PRs, but just in case
+];
+
+function shouldSkipFile(filename: string): boolean {
+  return SKIP_PATTERNS.some((pattern) => pattern.test(filename));
+}
+
 export function analyzeFile(
   file: PRFile,
   coverageMap: Map<string, CoverageAnalysis>
@@ -84,14 +103,17 @@ export function analyzeFile(
 }
 
 export function analyzePR(pr: PRDetails): PRAnalysis {
+  // Filter out generated/lock files
+  const reviewableFiles = pr.files.filter((f) => !shouldSkipFile(f.filename));
+
   // Analyze coverage relationships between source and test files
-  const coverageAnalyses = analyzeCoverage(pr.files);
+  const coverageAnalyses = analyzeCoverage(reviewableFiles);
   const coverageMap = new Map<string, CoverageAnalysis>();
   for (const analysis of coverageAnalyses) {
     coverageMap.set(analysis.sourceFile, analysis);
   }
 
-  const files = pr.files.map((file) => analyzeFile(file, coverageMap));
+  const files = reviewableFiles.map((file) => analyzeFile(file, coverageMap));
 
   // Sort by priority score (highest first)
   files.sort((a, b) => b.priorityScore - a.priorityScore);
