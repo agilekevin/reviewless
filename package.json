@@ -9,7 +9,9 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/cli.ts",
-    "dev": "tsx watch src/cli.ts"
+    "dev": "tsx watch src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "pr",
@@ -28,6 +30,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "vitest": "^4.0.15"
   }
 }

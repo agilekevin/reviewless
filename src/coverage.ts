@@ -110,7 +110,7 @@ function isTestFile(filename: string): boolean {
  * Extract imports from a test file patch to find which source modules it tests.
  * Returns a list of module paths that this test file imports.
  */
-function extractImportsFromPatch(patch: string, testFilePath: string): string[] {
+export function extractImportsFromPatch(patch: string, testFilePath: string): string[] {
   if (!patch) return [];
 
   const imports: string[] = [];
@@ -161,7 +161,7 @@ function extractImportsFromPatch(patch: string, testFilePath: string): string[] 
  * Check if a source file path matches any of the imports from a test file.
  * Handles both absolute module paths and relative imports.
  */
-function sourceMatchesImport(sourceFile: string, imports: string[]): boolean {
+export function sourceMatchesImport(sourceFile: string, imports: string[]): boolean {
   // Extract module name from source file
   // e.g., "libs/langgraph/langgraph/graph/state.py" -> "langgraph.graph.state"
   const lastSlash = sourceFile.lastIndexOf("/");
