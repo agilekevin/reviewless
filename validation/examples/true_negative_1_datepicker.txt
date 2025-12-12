@@ -1,0 +1,22 @@
+# TRUE NEGATIVE: wdullaer/MaterialDateTimePicker
+# SHA: f849a5c2704c974ba182fe4e2e205fa7f4fd395d
+# Our Score: 0
+# Score 0, random commit (not known to be buggy)
+# GitHub: https://github.com/wdullaer/MaterialDateTimePicker/commit/f849a5c2704c974ba182fe4e2e205fa7f4fd395d
+
+Commit message: Merge pull request #667 from wdullaer/dependabot/gradle/com.pholser-junit-quickcheck-core-0.9.2
+
+Bump junit-quickcheck-core from 0.9.1 to 0.9.2
+
+--- library/build.gradle (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -34,7 +34,7 @@ dependencies {
+     implementation 'androidx.recyclerview:recyclerview:1.1.0'
+ 
+     testImplementation 'junit:junit:4.13'
+-    testImplementation 'com.pholser:junit-quickcheck-core:0.9.1'
++    testImplementation 'com.pholser:junit-quickcheck-core:0.9.2'
+     testImplementation 'com.pholser:junit-quickcheck-generators:0.9.1'
+ 
+     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+

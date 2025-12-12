@@ -1,2 +1,11 @@
 node_modules/
 dist/
+
+# Validation datasets (too large for GitHub, download on demand)
+validation/*.csv
+validation/*.zip
+validation/*.json
+validation/ghprdata/
+
+# Reports (generated output)
+reports/

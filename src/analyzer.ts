@@ -62,8 +62,9 @@ function getPriorityLevel(score: number): FileAnalysis["priorityLevel"] {
   return "low";
 }
 
-// Generated/lock files that don't need code review
+// Files that don't need code review - focus on actual source code
 const SKIP_PATTERNS = [
+  // Lock files
   /\.lock$/,                    // uv.lock, Cargo.lock, etc.
   /package-lock\.json$/,
   /yarn\.lock$/,
@@ -71,10 +72,53 @@ const SKIP_PATTERNS = [
   /Gemfile\.lock$/,
   /poetry\.lock$/,
   /composer\.lock$/,
+
+  // Config/build files (low bug risk, high false positive rate)
+  /\.json$/,                    // package.json, tsconfig.json, etc.
+  /\.xml$/,                     // pom.xml, build.xml, etc.
+  /\.gradle(\.kts)?$/,          // build.gradle, build.gradle.kts
+  /\.toml$/,                    // Cargo.toml, pyproject.toml
+  /\.ya?ml$/,                   // .yml, .yaml config files
+  /\.properties$/,              // Java properties files
+  /\.ini$/,                     // INI config files
+  /\.cfg$/,                     // Config files
+  /\.conf$/,                    // Config files
+  /Makefile$/,
+  /Dockerfile$/,
+  /\.dockerignore$/,
+  /\.gitignore$/,
+  /\.editorconfig$/,
+  /\.prettierrc/,
+  /\.eslintrc/,
+  /\.babelrc/,
+
+  // Documentation
+  /\.md$/,                      // Markdown
+  /\.rst$/,                     // reStructuredText
+  /\.txt$/,                     // Plain text
+  /\.adoc$/,                    // AsciiDoc
+  /\/docs?\//,                  // /doc/ or /docs/ folders
+  /\/documentation\//,
+  /LICENSE/i,
+  /CHANGELOG/i,
+  /HISTORY/i,
+  /README/i,
+  /CONTRIBUTING/i,
+
+  // Version files
+  /version\.py$/,
+  /_version\.py$/,
+  /__version__\.py$/,
+  /VERSION$/,
+
+  // Generated/vendored
   /\.min\.(js|css)$/,          // Minified files
   /\.generated\./,             // Explicitly generated files
+  /\.bundle\./,                // Bundled files
   /\/vendor\//,                // Vendored dependencies
   /\/node_modules\//,          // Should never be in PRs, but just in case
+  /\/dist\//,                  // Build output
+  /\/build\//,                 // Build output
 ];
 
 function shouldSkipFile(filename: string): boolean {

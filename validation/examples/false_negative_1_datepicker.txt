@@ -1,0 +1,64 @@
+# FALSE NEGATIVE: wdullaer/MaterialDateTimePicker
+# SHA: 288f0a9c4b01ffcedf9fec41dd7c0373ee55f277
+# Our Score: 0
+# Score 0, but this commit introduced a bug
+# GitHub: https://github.com/wdullaer/MaterialDateTimePicker/commit/288f0a9c4b01ffcedf9fec41dd7c0373ee55f277
+
+Commit message: Increase version number to 4.1.1
+
+--- README.md (modified) ---
+additions: 2, deletions: 2, changes: 4
+@@ -42,7 +42,7 @@ Date Picker | Time Picker
+  The easiest way to add the Material DateTime Picker library to your project is by adding it as a dependency to your `build.gradle`
+ ```groovy
+ dependencies {
+-    implementation 'com.wdullaer:materialdatetimepicker:4.1.0'
++    implementation 'com.wdullaer:materialdatetimepicker:4.1.1'
+ }
+ ```
+ 
+@@ -243,7 +243,7 @@ This library depends on some androidx support libraries. Because the jvm allows
+ Using the following snippet in your apps `build.gradle` file you can exclude this library's transitive appcompat library dependency from being installed.
+ 
+ ```groovy
+-implementation ('com.wdullaer:materialdatetimepicker:4.1.0') {
++implementation ('com.wdullaer:materialdatetimepicker:4.1.1') {
+         exclude group: 'androidx.appcompat'
+ }
+ ```
+
+--- README_ES.md (modified) ---
+additions: 2, deletions: 2, changes: 4
+@@ -42,7 +42,7 @@ Selector de fecha | Selector de tiempo
+     La forma más fácil de agregar a la Biblioteca la _Material DateTime Picker_ a su proyecto es agregarla como una dependencia `build.gradle`
+     ```groovy
+     a sus dependencias{
+-        implementation 'com.wdullaer:materialdatetimepicker:4.1.0'
++        implementation 'com.wdullaer:materialdatetimepicker:4.1.1'
+ }
+ ```
+ 
+@@ -244,7 +244,7 @@ puede desactivar la carga de la biblioteca de soporte para MaterialDateTimePicke
+ Usando el siguiente fragmento en el archivo `build.gradle` de su aplicación, puede excluir la posibilidad de que se instale la biblioteca de soporte transitivo de esta biblioteca.
+ 
+ ```groovy
+-implementation ('com.wdullaer:materialdatetimepicker:4.1.0') {
++implementation ('com.wdullaer:materialdatetimepicker:4.1.1') {
+         exclude group: 'com.android.support'
+ }
+ ```
+
+--- gradle.properties (modified) ---
+additions: 2, deletions: 2, changes: 4
+@@ -17,8 +17,8 @@
+ # http://www.gradle.org/docs/current/userguide/multi_project_builds.html#sec:decoupled_projects
+ # org.gradle.parallel=true
+ 
+-VERSION_NAME=4.1.0
+-VERSION_CODE=48
++VERSION_NAME=4.1.1
++VERSION_CODE=49
+ GROUP=com.wdullaer
+ 
+ ANDROID_BUILD_MIN_SDK_VERSION=16
+

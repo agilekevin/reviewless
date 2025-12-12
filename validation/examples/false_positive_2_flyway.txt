@@ -1,0 +1,1796 @@
+# FALSE POSITIVE: flyway/flyway
+# SHA: 81bd9f856f6769e276dab518cea5a592b83f43ae
+# Our Score: 37.5
+# Score 37.5, but this is a random commit (not known to be buggy)
+# GitHub: https://github.com/flyway/flyway/commit/81bd9f856f6769e276dab518cea5a592b83f43ae
+
+Commit message: Bump version to flyway-11.19.0
+
+Please see the GH release for the release notes
+
+CLI now ships with Java 25
+
+--- documentation/Reference/Commands/Snapshot.md (modified) ---
+additions: 3, deletions: 3, changes: 6
+@@ -55,9 +55,9 @@ The `snapshot.build*` arguments make it possible to create a snapshot for any mi
+ 
+ ### Required
+ 
+-| Parameter                                                                                               | Namespace | Description                                                                                   |
+-|---------------------------------------------------------------------------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
+-| [`filename`](<Configuration/Flyway Namespace/Flyway Snapshot Namespace/Flyway Snapshot Source Setting>) | snapshot  | Destination location for the snapshot. Can be a file path, or a snapshot history table entry. |
++| Parameter                                                                                                 | Namespace | Description                                                                                   |
++|-----------------------------------------------------------------------------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
++| [`filename`](<Configuration/Flyway Namespace/Flyway Snapshot Namespace/Flyway Snapshot Filename Setting>) | snapshot  | Destination location for the snapshot. Can be a file path, or a snapshot history table entry. |
+ 
+ ### Optional
+ 
+
+--- documentation/Reference/Configuration/Environments Namespace/Environment Provisioner Setting.md (modified) ---
+additions: 4, deletions: 2, changes: 6
+@@ -32,11 +32,13 @@ Note that not all provisioner types will support provisioning. The [clean provis
+ 
+ ### Re-provisioning
+ 
+-Re-provisioning consists of resetting a database to a known state. This could be cleaning it and leaving it empty or resetting it to a populated state, such as a snapshot of production.
++Re-provisioning resets a database as if it were newly provisioned. This is a destructive operation, which could involve cleaning it and leaving it empty or resetting it to a populated state. Re-provisioning can only be performed on environments that specify a provisioner which supports it. For example, an environment using the `none` provisioner (the default value if a provisioner is not set) will raise an error if a re-provision is attempted.
+ 
+-Re-provisioning is currently only triggered programmatically or via Flyway Desktop. In Flyway Desktop it is triggered for the [shadow database](https://documentation.red-gate.com/display/FD/Shadow+and+build+environments) whenever the state is stale and needs to be reset.
++Re-provisioning is typically triggered by Flyway Desktop or on environments specified as a `-buildEnvironment` to commands such as [Diff](<Commands/Diff>) or [Check](<Commands/Check>). In Flyway Desktop it is triggered for the [shadow database](https://documentation.red-gate.com/display/FD/Shadow+and+build+environments) whenever the state is stale and needs to be reset.
+ In this context, if it is used to reset to a baseline state, then it avoids the need for generating and executing a baseline migration script, which can be tricky with databases which have cross-database dependencies, or are very large.
+ 
++Re-provisioning may be manually requested by using the [`provisionMode`](<Configuration/Flyway Namespace/Flyway Provision Mode Setting>) parameter on the command line.
++
+ ## Type
+ 
+ String
+
+--- documentation/Reference/Configuration/Flyway Namespace.md (modified) ---
+additions: 1, deletions: 0, changes: 1
+@@ -14,6 +14,7 @@ This namespace contains the configurations specific to the Flyway engine.
+ | [`loggers`](<Configuration/Flyway Namespace/Flyway Loggers Setting>)                                        | Community | String array | Loggers to use.                                   |
+ | [`reportEnabled`](<Configuration/Flyway Namespace/Flyway Report Enabled Setting>)                           | Community | Boolean      | Whether to enable generating a report file.       |
+ | [`reportFilename`](<Configuration/Flyway Namespace/Flyway Report Filename Setting>)                         | Community | String       | Filename for the report file.                     |
++| [`provisionMode`](<Configuration/Flyway Namespace/Flyway Provision Mode Setting>)                         | Community | String       | Use a specific provision mode for the target environment                 |
+ 
+ ## Migration location and naming settings
+ 
+
+--- documentation/Reference/Configuration/Flyway Namespace/Flyway Provision Mode Setting.md (added) ---
+additions: 46, deletions: 0, changes: 46
+@@ -0,0 +1,46 @@
++---
++subtitle: flyway.provisionMode
++---
++
++## Description
++
++Controls how flyway runs the [Provisioner](<Configuration/Environments Namespace/Environment Provisioner Setting>) on the [target environment](<Configuration/Flyway Namespace/Flyway Environment Setting>), if one was configured.
++
++### Provision
++
++Default behavior. When `-provisionMode=provision` is set, Flyway will attempt to `provision` the environment if it does not exist. For example, if an environment used the [`create-database`](<Configuration/Environments Namespace/Environment Provisioner Setting/Create Database Provisioner>) provisioner, Flyway would attempt to create the database if it did not already exist before continuing.
++
++### Re-provision
++
++When `-provisionMode=reprovision` is set, Flyway will attempt to reset the target environment to a state as if it were newly provisioned. **This is a destructive operation**. Flyway will raise an error if `reprovision` is attempted against an environment without a provisioner defined or where `reprovision` is not possible.
++
++### Skip
++
++When `-provisionMode=skip` is set, flyway should not attempt to provision or re-prosivion the environment.
++
++## Type
++
++String
++
++## Default
++
++`provision`
++
++## Usage
++
++### Flyway Desktop
++
++This property can't be configured manually from Flyway Desktop.
++
++### Command-line
++
++Request flyway to reset a temporary development environment using `reprovision`:
++```powershell
++./flyway -environment=tempDev -provisionMode=reprovision info
++```
++
++### TOML Configuration File
++
++It is not recommended to set this property using the configuration file. 
++
++This option is intended as an on-demand configuration for specific individual operations. Setting `provisionMode` to `reprovision` in the configuration file means this is set for all Flyway operations by default. This may lead to accidentally running re-provision against unintended targets, which could potentially cause data loss.
+\ No newline at end of file
+
+--- documentation/Reference/Database Driver Reference/MongoDB.md (modified) ---
+additions: 4, deletions: 4, changes: 8
+@@ -67,20 +67,20 @@ We have to map Flyway concepts and language rooted in the relational database wo
+               <dependency>
+                   <groupId>com.github.kornilova203</groupId>
+                   <artifactId>mongo-jdbc-driver</artifactId>
+-                  <version>1.19</version>
++                  <version>1.21</version>
+                   <scope>system</scope>
+-                  <systemPath>mongo-jdbc-standalone-1.19.jar</systemPath>  
++                  <systemPath>mongo-jdbc-standalone-1.21.jar</systemPath>  
+               </dependency>
+           ```
+-        - or `mvn install:install-file -Dfile=mongo-jdbc-standalone-1.19.jar -DgroupId=com.github.kornilova203 -DartifactId=mongo-jdbc-driver -Dversion=1.19 -Dpackaging=jar -DgeneratePom=true`
++        - or `mvn install:install-file -Dfile=mongo-jdbc-standalone-1.21.jar -DgroupId=com.github.kornilova203 -DartifactId=mongo-jdbc-driver -Dversion=1.21 -Dpackaging=jar -DgeneratePom=true`
+ 
+ - Using Flyway with Gradle?
+     - Include the latest Flyway MongoDB dependency [here](https://central.sonatype.com/artifact/org.flywaydb/flyway-database-mongodb) as a buildscript dependency
+     - Include the latest MongoDB driver dependency [here](https://github.com/DataGrip/mongo-jdbc-driver) in your buildscript
+         - For example:
+       ```groovy
+         dependencies {
+-          implementation files('mongo-jdbc-standalone-1.19.jar')
++          implementation files('mongo-jdbc-standalone-1.21.jar')
+         }
+       ```
+ 
+
+--- documentation/Release notes and older versions/Release Notes for Flyway Engine.html (modified) ---
+additions: 21, deletions: 0, changes: 21
+@@ -7,6 +7,27 @@
+ 
+ </div>
+ <div class="col-md-9">
++  <div class="release">
++        <h2 id="11.19.0">Flyway 11.19.0 (2025-12-08)</h2>
++
++        <h3>Bug fixes</h3>
++        <ul>
++            <li>Fixed issue when running `check -drift` against a database with no snapshot history table</li>
++        </ul>
++
++        <h3>Java compatibility</h3>
++        <ul>
++            <li>CLI now ships with Java 25</li>
++        </ul>
++
++        <h3>Library upgrades</h3>
++        <ul>
++            <li>Upgraded RgCompare.Cli from 1.45.1.2083 to 1.45.1.2176</li>
++            <li>Upgraded MongoDB Sync Driver to 5.6.1</li>
++        </ul>
++
++  </div>
++
+   <div class="release">
+         <h2 id="11.18.0">Flyway 11.18.0 (2025-11-27)</h2>
+ 
+
+--- documentation/_config.yml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -1,4 +1,4 @@
+-flywayVersion: 11.18.0
++flywayVersion: 11.19.0
+ enterpriseUrl: https://download.red-gate.com/maven/release/com/redgate/flyway
+ kramdown:
+   smart_quotes: ["apos", "apos", "quot", "quot"]
+
+--- flyway-command/flyway-command-test-connection/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-command/flyway-command-test-connection/src/main/java/org/flywaydb/testconnection/StandardInEnvironmentModelProvider.java (added) ---
+additions: 45, deletions: 0, changes: 45
+@@ -0,0 +1,45 @@
++/*-
++ * ========================LICENSE_START=================================
++ * flyway-command-test-connection
++ * ========================================================================
++ * Copyright (C) 2010 - 2025 Red Gate Software Ltd
++ * ========================================================================
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ * 
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ * 
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ * =========================LICENSE_END==================================
++ */
++package org.flywaydb.testconnection;
++
++import com.fasterxml.jackson.databind.DeserializationFeature;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import java.io.InputStream;
++import java.nio.charset.StandardCharsets;
++import java.util.Scanner;
++import lombok.RequiredArgsConstructor;
++import org.flywaydb.core.api.FlywayException;
++import org.flywaydb.core.internal.configuration.models.EnvironmentModel;
++
++@RequiredArgsConstructor
++class StandardInEnvironmentModelProvider {
++    private final InputStream stdIn;
++
++    EnvironmentModel getModel() {
++        try (final var scanner = new Scanner(stdIn, StandardCharsets.UTF_8)) {
++            final var request = scanner.nextLine();
++            return new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
++                .readerFor(EnvironmentModel.class)
++                .readValue(request);
++        } catch (final Exception e) {
++            throw new FlywayException("Error reading environment from standard in", e);
++        }
++    }
++}
+
+--- flyway-command/flyway-command-test-connection/src/main/java/org/flywaydb/testconnection/TestConnectionCommandExtension.java (modified) ---
+additions: 39, deletions: 9, changes: 48
+@@ -22,21 +22,35 @@
+ import static org.flywaydb.core.internal.util.TelemetryUtils.getTelemetryManager;
+ 
+ import java.util.List;
++import java.util.Map;
+ import lombok.CustomLog;
++import lombok.RequiredArgsConstructor;
+ import org.flywaydb.core.FlywayTelemetryManager;
+ import org.flywaydb.core.TelemetrySpan;
+ import org.flywaydb.core.api.FlywayException;
+ import org.flywaydb.core.api.configuration.Configuration;
++import org.flywaydb.core.api.configuration.FluentConfiguration;
+ import org.flywaydb.core.api.output.OperationResult;
+ import org.flywaydb.core.extensibility.CommandExtension;
+ import org.flywaydb.core.extensibility.EventTelemetryModel;
+ import org.flywaydb.core.extensibility.TestConnectionRunner;
++import org.flywaydb.core.internal.configuration.models.EnvironmentModel;
+ import org.flywaydb.core.internal.util.Pair;
+ 
+ @CustomLog
++@RequiredArgsConstructor
+ public class TestConnectionCommandExtension implements CommandExtension {
+     public static final String VERB = "testConnection";
+ 
++    private static final String TEST_CONNECTION_INLINE_ENVIRONMENT = "default";
++
++    private final StandardInEnvironmentModelProvider modelProvider;
++
++    @SuppressWarnings("unused")
++    public TestConnectionCommandExtension() {
++        this.modelProvider = new StandardInEnvironmentModelProvider(System.in);
++    }
++
+     @Override
+     public boolean handlesCommand(final String command) {
+         return VERB.equals(command);
+@@ -73,14 +87,30 @@ public OperationResult handle(final String command, final Configuration config,
+ 
+         final FlywayTelemetryManager flywayTelemetryManager = getTelemetryManager(config);
+ 
+-        return TelemetrySpan.trackSpan(new EventTelemetryModel(VERB, flywayTelemetryManager), telemetryModel -> {
+-            final List<TestConnectionRunner> testConnectionRunners = config.getPluginRegister()
+-                .getLicensedInstancesOf(TestConnectionRunner.class, config);
+-            final List<String> results = testConnectionRunners.stream()
+-                .map(testConnectionRunner -> testConnectionRunner.testConnection(config))
+-                .filter(x -> !x.isEmpty())
+-                .toList();
+-            return new TestConnectionResult(results);
+-        });
++        return TelemetrySpan.trackSpan(new EventTelemetryModel(VERB, flywayTelemetryManager),
++            telemetryModel -> testConnection(config));
++    }
++
++    private TestConnectionResult testConnection(final Configuration config) {
++        final Configuration configWithRelevantEnvironments = getConfigWithRelevantEnvironments(config);
++
++        final List<TestConnectionRunner> testConnectionRunners = configWithRelevantEnvironments.getPluginRegister()
++            .getLicensedInstancesOf(TestConnectionRunner.class, configWithRelevantEnvironments);
++        final List<String> results = testConnectionRunners.stream()
++            .map(testConnectionRunner -> testConnectionRunner.testConnection(configWithRelevantEnvironments))
++            .filter(x -> !x.isEmpty())
++            .toList();
++        return new TestConnectionResult(results);
++    }
++
++    private Configuration getConfigWithRelevantEnvironments(final Configuration config) {
++        if ("-".equals(config.getCurrentEnvironmentName())) {
++            final EnvironmentModel environment = modelProvider.getModel();
++            return new FluentConfiguration().configuration(config)
++                .environment(TEST_CONNECTION_INLINE_ENVIRONMENT)
++                .allEnvironments(Map.of(TEST_CONNECTION_INLINE_ENVIRONMENT, environment));
++        }
++
++        return config;
+     }
+ }
+
+--- flyway-command/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -5,7 +5,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-command</artifactId>
+
+--- flyway-commandline/pom.xml (modified) ---
+additions: 12, deletions: 18, changes: 30
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+   <artifactId>flyway-commandline</artifactId>
+   <packaging>jar</packaging>
+@@ -13,7 +13,7 @@
+ 
+ 
+ 
+-    <jre.version>21.0.5</jre.version>
++    <jre.version>25.0.1</jre.version>
+   </properties>
+ 
+   <dependencies>
+@@ -420,12 +420,6 @@
+ 
+ 
+ 
+-
+-
+-
+-
+-
+-
+ 
+ 
+ 
+@@ -539,7 +533,7 @@
+     <dependency>
+       <groupId>org.mongodb</groupId>
+       <artifactId>mongodb-driver-sync</artifactId>
+-      <version>5.1.2</version>
++      <version>5.6.1</version>
+       <scope>runtime</scope>
+     </dependency>
+     <dependency>
+@@ -880,19 +874,19 @@
+                 </goals>
+                 <configuration>
+                   <target>
+-                    <unzip src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_windows_hotspot_${jre.version}_11.zip"
++                    <unzip src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_windows_hotspot_${jre.version}_8.zip"
+                       dest="${project.build.directory}/dependency/jre-windows-x64"/>
+                     <untar compression="gzip"
+-                      src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_linux_hotspot_${jre.version}_11.tar.gz"
++                      src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_linux_hotspot_${jre.version}_8.tar.gz"
+                       dest="${project.build.directory}/dependency/jre-linux-x64"/>
+                     <untar compression="gzip"
+-                      src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_alpine-linux_hotspot_${jre.version}_11.tar.gz"
++                      src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_alpine-linux_hotspot_${jre.version}_8.tar.gz"
+                       dest="${project.build.directory}/dependency/jre-linux-alpine-x64"/>
+                     <untar compression="gzip"
+-                      src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_mac_hotspot_${jre.version}_11.tar.gz"
++                      src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_mac_hotspot_${jre.version}_8.tar.gz"
+                       dest="${project.build.directory}/dependency/jre-macos-x64"/>
+                     <untar compression="gzip"
+-                      src="${basedir}/src/main/assembly/OpenJDK21U-jre_aarch64_mac_hotspot_${jre.version}_11.tar.gz"
++                      src="${basedir}/src/main/assembly/OpenJDK25U-jre_aarch64_mac_hotspot_${jre.version}_8.tar.gz"
+                       dest="${project.build.directory}/dependency/jre-macos-arm64"/>
+                   </target>
+                 </configuration>
+@@ -992,7 +986,7 @@
+                             </goals>
+                             <configuration>
+                                 <target>
+-                                    <unzip src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_windows_hotspot_${jre.version}_11.zip" dest="${project.build.directory}/dependency/jre-windows-x64"/>
++                                    <unzip src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_windows_hotspot_${jre.version}_8.zip" dest="${project.build.directory}/dependency/jre-windows-x64"/>
+                                 </target>
+                             </configuration>
+                         </execution>
+@@ -1046,7 +1040,7 @@
+                             </goals>
+                             <configuration>
+                                 <target>
+-                                    <untar compression="gzip" src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_mac_hotspot_${jre.version}_11.tar.gz" dest="${project.build.directory}/dependency/jre-macos-x64"/></target>
++                                    <untar compression="gzip" src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_mac_hotspot_${jre.version}_8.tar.gz" dest="${project.build.directory}/dependency/jre-macos-x64"/></target>
+                             </configuration>
+                         </execution>
+                     </executions>
+@@ -1099,7 +1093,7 @@
+                             </goals>
+                             <configuration>
+                                 <target>
+-                                    <untar compression="gzip" src="${basedir}/src/main/assembly/OpenJDK21U-jre_aarch64_mac_hotspot_${jre.version}_11.tar.gz" dest="${project.build.directory}/dependency/jre-macos-arm64"/>
++                                    <untar compression="gzip" src="${basedir}/src/main/assembly/OpenJDK25U-jre_aarch64_mac_hotspot_${jre.version}_8.tar.gz" dest="${project.build.directory}/dependency/jre-macos-arm64"/>
+                                 </target>
+                             </configuration>
+                         </execution>
+@@ -1174,7 +1168,7 @@
+                 <configuration>
+                   <target>
+                     <untar compression="gzip"
+-                      src="${basedir}/src/main/assembly/OpenJDK21U-jre_x64_linux_hotspot_${jre.version}_11.tar.gz"
++                      src="${basedir}/src/main/assembly/OpenJDK25U-jre_x64_linux_hotspot_${jre.version}_8.tar.gz"
+                       dest="${project.build.directory}/dependency/jre-linux-x64"/>
+                   </target>
+                 </configuration>
+
+--- flyway-commandline/src/main/assembly/OpenJDK25U-jre_aarch64_mac_hotspot_25.0.1_8.tar.gz (renamed) ---
+additions: 0, deletions: 0, changes: 0
+no patch available
+
+--- flyway-commandline/src/main/assembly/OpenJDK25U-jre_x64_alpine-linux_hotspot_25.0.1_8.tar.gz (renamed) ---
+additions: 0, deletions: 0, changes: 0
+no patch available
+
+--- flyway-commandline/src/main/assembly/OpenJDK25U-jre_x64_linux_hotspot_25.0.1_8.tar.gz (renamed) ---
+additions: 0, deletions: 0, changes: 0
+no patch available
+
+--- flyway-commandline/src/main/assembly/OpenJDK25U-jre_x64_mac_hotspot_25.0.1_8.tar.gz (renamed) ---
+additions: 0, deletions: 0, changes: 0
+no patch available
+
+--- flyway-commandline/src/main/assembly/OpenJDK25U-jre_x64_windows_hotspot_25.0.1_8.zip (renamed) ---
+additions: 0, deletions: 0, changes: 0
+no patch available
+
+--- flyway-commandline/src/main/assembly/component.xml (modified) ---
+additions: 0, deletions: 1, changes: 1
+@@ -331,7 +331,6 @@
+ 
+ 
+ 
+-
+ 
+ 
+         <include>org.flywaydb:flyway-database-ignite</include>
+
+--- flyway-commandline/src/main/assembly/flyway (modified) ---
+additions: 3, deletions: 3, changes: 6
+@@ -36,11 +36,11 @@ fi
+ CP="$CLASSPATH:$INSTALLDIR/lib/*:$INSTALLDIR/lib/aad/*:$INSTALLDIR/lib/plugins/*:$INSTALLDIR/lib/oracle_wallet/*:$INSTALLDIR/lib/flyway/*:$INSTALLDIR/lib/netty/*:$INSTALLDIR/lib/opentelemetry/*:$INSTALLDIR/drivers/*:$INSTALLDIR/drivers/aws/*:$INSTALLDIR/drivers/gcp/*:$INSTALLDIR/drivers/cassandra/*:$INSTALLDIR/drivers/couchbase/*:$INSTALLDIR/drivers/mongo/*"
+ 
+ 
+-EXTRA_ARGS=
++NATIVE_ACCESS="--enable-native-access=ALL-UNNAMED"
+ if $linux; then
+-  EXTRA_ARGS=-Djava.security.egd=file:/dev/../dev/urandom
++  EXTRA_ARGS=($NATIVE_ACCESS, -Djava.security.egd=file:/dev/../dev/urandom)
+ else
+-  EXTRA_ARGS=-Djava.library.path="$INSTALLDIR/native"
++  EXTRA_ARGS=($NATIVE_ACCESS, "-Djava.library.path=$INSTALLDIR/native")
+ fi
+ 
+ if `command -v cygpath > /dev/null`; then CP=`cygpath -pw "$CP"`; fi
+
+--- flyway-commandline/src/main/assembly/flyway.cmd (modified) ---
+additions: 2, deletions: 1, changes: 3
+@@ -23,8 +23,9 @@ if not "%FLYWAY_JAVA_CMD%"=="" (
+ if "%JAVA_ARGS%"=="" (
+   set JAVA_ARGS=
+ )
++set EXTRA_ARGS=--enable-native-access=ALL-UNNAMED -Djava.library.path="%INSTALLDIR%\native"
+ 
+-%JAVA_CMD% -Djava.library.path="%INSTALLDIR%\native" %JAVA_ARGS% -cp "%CLASSPATH%;%INSTALLDIR%\lib\*;%INSTALLDIR%\lib\plugins\*;%INSTALLDIR%\lib\aad\*;%INSTALLDIR%\lib\oracle_wallet\*;%INSTALLDIR%\lib\flyway\*;%INSTALLDIR%\lib\netty\*;%INSTALLDIR%\lib\opentelemetry\*;%INSTALLDIR%\drivers\*;%INSTALLDIR%\drivers\aws\*;%INSTALLDIR%\drivers\gcp\*;%INSTALLDIR%\drivers\cassandra\*;%INSTALLDIR%\drivers\couchbase\*;%INSTALLDIR%\drivers\mongo\*" org.flywaydb.commandline.Main %*
++%JAVA_CMD% %EXTRA_ARGS% %JAVA_ARGS% -cp "%CLASSPATH%;%INSTALLDIR%\lib\*;%INSTALLDIR%\lib\plugins\*;%INSTALLDIR%\lib\aad\*;%INSTALLDIR%\lib\oracle_wallet\*;%INSTALLDIR%\lib\flyway\*;%INSTALLDIR%\lib\netty\*;%INSTALLDIR%\lib\opentelemetry\*;%INSTALLDIR%\drivers\*;%INSTALLDIR%\drivers\aws\*;%INSTALLDIR%\drivers\gcp\*;%INSTALLDIR%\drivers\cassandra\*;%INSTALLDIR%\drivers\couchbase\*;%INSTALLDIR%\drivers\mongo\*" org.flywaydb.commandline.Main %*
+ 
+ @REM Exit using the same code returned from Java
+ EXIT /B %ERRORLEVEL%
+\ No newline at end of file
+
+--- flyway-commandline/src/main/assembly/linux-alpine.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -30,7 +30,7 @@
+     </componentDescriptors>
+     <fileSets>
+         <fileSet>
+-            <directory>target/dependency/jre-linux-alpine-x64/jdk-${jre.version}+11-jre</directory>
++            <directory>target/dependency/jre-linux-alpine-x64/jdk-${jre.version}+8-jre</directory>
+             <outputDirectory>jre</outputDirectory>
+             <fileMode>755</fileMode>
+         </fileSet>
+
+--- flyway-commandline/src/main/assembly/linux.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -30,7 +30,7 @@
+     </componentDescriptors>
+     <fileSets>
+         <fileSet>
+-            <directory>target/dependency/jre-linux-x64/jdk-${jre.version}+11-jre</directory>
++            <directory>target/dependency/jre-linux-x64/jdk-${jre.version}+8-jre</directory>
+             <outputDirectory>jre</outputDirectory>
+             <fileMode>755</fileMode>
+         </fileSet>
+
+--- flyway-commandline/src/main/assembly/macos-arm64.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -30,7 +30,7 @@
+     </componentDescriptors>
+     <fileSets>
+         <fileSet>
+-            <directory>target/dependency/jre-macos-arm64/jdk-${jre.version}+11-jre/Contents/Home</directory>
++            <directory>target/dependency/jre-macos-arm64/jdk-${jre.version}+8-jre/Contents/Home</directory>
+             <outputDirectory>jre</outputDirectory>
+             <fileMode>755</fileMode>
+         </fileSet>
+
+--- flyway-commandline/src/main/assembly/macos.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -30,7 +30,7 @@
+     </componentDescriptors>
+     <fileSets>
+         <fileSet>
+-            <directory>target/dependency/jre-macos-x64/jdk-${jre.version}+11-jre/Contents/Home</directory>
++            <directory>target/dependency/jre-macos-x64/jdk-${jre.version}+8-jre/Contents/Home</directory>
+             <outputDirectory>jre</outputDirectory>
+             <fileMode>755</fileMode>
+         </fileSet>
+
+--- flyway-commandline/src/main/assembly/windows.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -30,7 +30,7 @@
+     </componentDescriptors>
+     <fileSets>
+         <fileSet>
+-            <directory>target/dependency/jre-windows-x64/jdk-${jre.version}+11-jre</directory>
++            <directory>target/dependency/jre-windows-x64/jdk-${jre.version}+8-jre</directory>
+             <outputDirectory>jre</outputDirectory>
+             <fileMode>644</fileMode>
+         </fileSet>
+
+--- flyway-commandline/src/main/java/org/flywaydb/commandline/configuration/ModernConfigurationManager.java (modified) ---
+additions: 2, deletions: 3, changes: 5
+@@ -249,7 +249,7 @@ private void configurePlugins(final ConfigurationModel config, final Configurati
+         }
+         try {
+             checkUnknownParamsInFlywayNamespace(config.getEnvironments()
+-                    .get(cfg.getCurrentEnvironmentName())
++                    .getOrDefault(cfg.getCurrentEnvironmentName(), new EnvironmentModel())
+                     .getFlyway(),
+                 Collections.emptyList(),
+                 rootConfigurationsIsEmpty,
+@@ -505,8 +505,7 @@ private static void throwMissingParameters(final FlywayEnvironmentModel model,
+     }
+ 
+     private static void combineConfigurationExceptions(final Iterable<? extends FlywayException> configurationExceptions) {
+-        final StringBuilder exceptionMessage = new StringBuilder("Failed to configure parameters:").append(
+-            System.lineSeparator());
++        final StringBuilder exceptionMessage = new StringBuilder("Failed to configure parameters:").append(System.lineSeparator());
+         configurationExceptions.forEach(e -> exceptionMessage.append(e.getMessage()).append(System.lineSeparator()));
+         exceptionMessage.append("Confirm the parameters are spelled correctly")
+             .append(System.lineSeparator())
+
+--- flyway-core/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+   <artifactId>flyway-core</artifactId>
+   <packaging>jar</packaging>
+
+--- flyway-core/src/main/java/org/flywaydb/core/FlywayTelemetryManager.java (modified) ---
+additions: 3, deletions: 2, changes: 5
+@@ -24,7 +24,6 @@
+ import org.flywaydb.core.extensibility.EventTelemetryModel;
+ import org.flywaydb.core.extensibility.Plugin;
+ import org.flywaydb.core.internal.license.FlywayPermit;
+-import org.flywaydb.core.internal.nc.MetaData;
+ 
+ public interface FlywayTelemetryManager extends Plugin {
+ 
+@@ -42,7 +41,9 @@ public interface FlywayTelemetryManager extends Plugin {
+ 
+     void notifyDatabaseChanged(final String engine, final String version, final String hosting);
+ 
+-    void notifyExperimentalMetadataChanged(final MetaData metadata);
++    void notifyExperimentalModeChanged(final boolean experimentalMode);
++
++    void notifyUserIdChanged(final String hashedUserId);
+ 
+     FlywayTelemetryProperties getProperties();
+ }
+
+--- flyway-core/src/main/java/org/flywaydb/core/api/configuration/ClassicConfiguration.java (modified) ---
+additions: 8, deletions: 4, changes: 12
+@@ -291,12 +291,16 @@ public ResolvedEnvironment getCurrentResolvedEnvironment(final ProgressLogger pr
+         final ProvisionerMode provisionerMode = StringUtils.hasText(envProvisionMode) ? ProvisionerMode.fromString(
+             envProvisionMode) : ProvisionerMode.Provision;
+         final ResolvedEnvironment resolved = getResolvedEnvironment(envName, provisionerMode, progress);
+-        if (resolved == null) {
++
++        if (resolved != null) {
++            return resolved;
++        } else if ("-".equals(envName)) {
++            return new ResolvedEnvironment();
++        } else {
+             throw new FlywayException("Environment '"
+                 + envName
+                 + "' not found. Check that this environment exists in your configuration.");
+         }
+-        return resolved;
+     }
+ 
+     public ResolvedEnvironment getResolvedEnvironment(final String envName) {
+@@ -2116,7 +2120,7 @@ public String getCurrentEnvironmentName() {
+         if (!StringUtils.hasText(envName)) {
+             envName = "default";
+         }
+-        if (!modernConfig.getEnvironments().containsKey(envName)) {
++        if (!modernConfig.getEnvironments().containsKey(envName) && !"-".equals(envName)) {
+             throw new FlywayException("Environment '"
+                 + envName
+                 + "' not found. Check that this environment exists in your configuration.");
+@@ -2126,7 +2130,7 @@ public String getCurrentEnvironmentName() {
+     }
+ 
+     private EnvironmentModel getCurrentUnresolvedEnvironment() {
+-        return modernConfig.getEnvironments().get(getCurrentEnvironmentName());
++        return modernConfig.getEnvironments().getOrDefault(getCurrentEnvironmentName(), new EnvironmentModel());
+     }
+ 
+     private void licenseGuardJdbcUrl(final String url) {
+
+--- flyway-core/src/main/java/org/flywaydb/core/internal/NullFlywayTelemetryManager.java (modified) ---
+additions: 5, deletions: 2, changes: 7
+@@ -23,7 +23,6 @@
+ import org.flywaydb.core.FlywayTelemetryManager;
+ import org.flywaydb.core.FlywayTelemetryProperties;
+ import org.flywaydb.core.api.configuration.Configuration;
+-import org.flywaydb.core.internal.nc.MetaData;
+ import org.flywaydb.core.extensibility.EventTelemetryModel;
+ import org.flywaydb.core.internal.license.FlywayPermit;
+ 
+@@ -70,8 +69,12 @@ public void notifyDatabaseChanged(final String engine, final String version, fin
+ 
+     }
+ 
++    public void notifyExperimentalModeChanged(boolean experimentalMode) {
++
++    }
++
+     @Override
+-    public void notifyExperimentalMetadataChanged(final MetaData metadata) {
++    public void notifyUserIdChanged(String hashedUserId) {
+ 
+     }
+ 
+
+--- flyway-core/src/main/java/org/flywaydb/core/internal/nc/NativeConnectorsDatabase.java (modified) ---
+additions: 5, deletions: 0, changes: 5
+@@ -262,4 +262,9 @@ default Pattern[] getUrlRedactionPatterns() {
+     }
+     
+     boolean isClosed();
++
++    @Override
++    default void close() {
++        //do nothing
++    }
+ }
+
+--- flyway-database/flyway-database-cassandra/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-db2/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-derby/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-hsqldb/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-informix/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-mongodb/pom.xml (modified) ---
+additions: 2, deletions: 2, changes: 4
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+@@ -26,7 +26,7 @@
+     <dependency>
+       <groupId>com.github.kornilova203</groupId>
+       <artifactId>mongo-jdbc-driver</artifactId>
+-      <version>1.19</version>
++      <version>1.21</version>
+     </dependency>
+     <dependency>
+       <groupId>com.fasterxml.jackson.core</groupId>
+
+--- flyway-database/flyway-database-nc-couchbase/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-nc-couchbase/src/main/java/org/flywaydb/database/nc/couchbase/CouchbaseDatabase.java (modified) ---
+additions: 3, deletions: 6, changes: 9
+@@ -111,6 +111,7 @@ public void initialize(final ResolvedEnvironment environment, final Configuratio
+ 
+         cluster = Cluster.connect(environment.getUrl(),
+             ClusterOptions.clusterOptions(environment.getUser(), environment.getPassword()).environment(env));
++        isClosed = false;
+ 
+         initializeBucketAndScope(getDefaultSchema(configuration));
+     }
+@@ -443,14 +444,10 @@ public void updateSchemaHistoryItem(final SchemaHistoryItem item, final String t
+     }
+ 
+     @Override
+-    public boolean isClosed() {
+-        return false;
+-    }
+-
+-    @Override
+-    public void close() throws Exception {
++    public void close() {
+         if (cluster != null) {
+             cluster.close();
++            super.close();
+         }
+     }
+ 
+
+--- flyway-database/flyway-database-nc-mongodb/pom.xml (modified) ---
+additions: 1, deletions: 2, changes: 3
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+@@ -29,7 +29,6 @@
+     <dependency>
+       <groupId>org.mongodb</groupId>
+       <artifactId>mongodb-driver-sync</artifactId>
+-      <version>5.1.2</version>
+     </dependency>
+     <dependency>
+       <groupId>org.projectlombok</groupId>
+
+--- flyway-database/flyway-database-nc-mongodb/src/main/java/org/flywaydb/database/nc/mongodb/MongoDBDatabase.java (modified) ---
+additions: 6, deletions: 7, changes: 13
+@@ -161,6 +161,7 @@ public void initialize(final ResolvedEnvironment environment, final Configuratio
+                 .credential(credential)
+                 .build());
+         }
++        isClosed = false;
+         final String databaseName = getDefaultSchema(configuration);
+ 
+         mongoDatabase = mongoClient.getDatabase(databaseName);
+@@ -301,13 +302,11 @@ public void createSchemas(final String... schemas) {
+     }
+ 
+     @Override
+-    public void close() throws Exception {
+-
+-    }
+-
+-    @Override
+-    public boolean isClosed() {
+-        return false;
++    public void close() {
++        if (mongoClient != null) {
++            mongoClient.close();
++            super.close();
++        }
+     }
+ 
+     @Override
+
+--- flyway-database/flyway-database-oracle/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-postgresql/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-redshift/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -7,7 +7,7 @@
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+     <relativePath>../../pom.xml</relativePath>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-database-redshift</artifactId>
+
+--- flyway-database/flyway-database-saphana/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-snowflake/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-database-sybasease/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-database/flyway-firebird/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -5,7 +5,7 @@
+   <parent>
+     <artifactId>flyway-parent</artifactId>
+     <groupId>org.flywaydb</groupId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/flyway-gcp-bigquery/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/flyway-gcp-spanner/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/flyway-mysql/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -5,7 +5,7 @@
+   <parent>
+     <artifactId>flyway-parent</artifactId>
+     <groupId>org.flywaydb</groupId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/flyway-singlestore/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/flyway-sqlserver/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+--- flyway-database/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-database</artifactId>
+
+--- flyway-experimental/flyway-experimental-sqlite/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-baseline/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-baseline/src/main/java/org/flywaydb/verb/baseline/BaselineVerbExtension.java (modified) ---
+additions: 1, deletions: 0, changes: 1
+@@ -57,6 +57,7 @@ public Object executeVerb(final Configuration configuration) {
+             final SchemasVerbExtension schemasVerbExtension = new SchemasVerbExtension();
+             schemasVerbExtension.useCaching();
+             schemasVerbExtension.executeVerb(configuration);
++            context.refresh(configuration);
+         } else {
+             LOG.warn("""
+                      The configuration option 'createSchemas' is false.
+
+--- flyway-experimental/flyway-verb-clean/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-info/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-migrate/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-migrate/src/main/java/org/flywaydb/verb/migrate/MigrateVerbExtension.java (modified) ---
+additions: 2, deletions: 6, changes: 8
+@@ -71,6 +71,7 @@ public Object executeVerb(final Configuration configuration) {
+ 
+         if (configuration.isValidateOnMigrate()) {
+             validate(configuration);
++            context.refresh(configuration);
+         }
+ 
+         NativeConnectorsDatabase database = context.getDatabase();
+@@ -80,6 +81,7 @@ public Object executeVerb(final Configuration configuration) {
+                 final SchemasVerbExtension schemasVerbExtension = new SchemasVerbExtension();
+                 schemasVerbExtension.useCaching();
+                 schemasVerbExtension.executeVerb(configuration);
++                context.refresh(configuration);
+             } catch (final NoClassDefFoundError e) {
+                 throw new FlywayException("Schemas verb extension is required for creating schemas but is not present",
+                     e);
+@@ -207,12 +209,6 @@ public Object executeVerb(final Configuration configuration) {
+         }
+         callbackManager.handleEvent(Event.AFTER_MIGRATE, database, configuration, context.getParsingContext());
+ 
+-        try {
+-            database.close();
+-        } catch (Exception e) {
+-            throw new FlywayException(e);
+-        }
+-
+         return migrateResult;
+     }
+ 
+
+--- flyway-experimental/flyway-verb-repair/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-schemas/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-testConnection/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/flyway-verb-validate/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-experimental/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <packaging>pom</packaging>
+
+--- flyway-locations/flyway-locations-s3/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -7,7 +7,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-locations/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -5,7 +5,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-locations</artifactId>
+
+--- flyway-nc/flyway-nc-callbacks/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-nc/flyway-nc-callbacks/src/main/java/org/flywaydb/nc/callbacks/NativeConnectorsCallbackHandler.java (modified) ---
+additions: 2, deletions: 1, changes: 3
+@@ -20,6 +20,7 @@
+ package org.flywaydb.nc.callbacks;
+ 
+ import static org.flywaydb.core.internal.util.FileUtils.getParentDir;
++import static org.flywaydb.core.internal.util.TelemetryUtils.getTelemetryManager;
+ import static org.flywaydb.nc.utils.ErrorUtils.calculateErrorMessage;
+ 
+ import java.nio.file.Paths;
+@@ -76,7 +77,7 @@ private void handleEvent(final Callback callback,
+         LOG.info("Callback executed: " + callback.getEvent().name() + " from " + callback.getPhysicalLocation());
+ 
+         try (final EventTelemetryModel telemetryModel = new EventTelemetryModel(callback.getEvent().getId(),
+-            NativeConnectorsUtils.getFlywayTelemetryManager(configuration))) {
++            getTelemetryManager(configuration))) {
+             executionUnits.forEach(executionUnit -> {
+ 
+                                 try {
+
+--- flyway-nc/flyway-nc-core/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-nc/flyway-nc-core/src/main/java/org/flywaydb/nc/NativeConnectorsHybrid.java (modified) ---
+additions: 14, deletions: 0, changes: 14
+@@ -19,6 +19,8 @@
+  */
+ package org.flywaydb.nc;
+ 
++import org.flywaydb.core.api.configuration.Configuration;
++import org.flywaydb.core.internal.configuration.models.ResolvedEnvironment;
+ import org.flywaydb.core.internal.nc.AbstractNativeConnectorsHybridDatabase;
+ 
+ public abstract class NativeConnectorsHybrid<T, U extends NativeConnectorsJdbc, V extends NativeConnectorsNonJdbc> extends AbstractNativeConnectorsHybridDatabase<T> {
+@@ -32,4 +34,16 @@ public U toNativeConnectorsJdbc() {
+     public V NativeConnectorsNonJdbc() {
+         return innerNonJdbc;
+     }
++
++    @Override
++    public void initialize(final ResolvedEnvironment environment, final Configuration configuration) {
++        innerJdbc.initialize(environment, configuration);
++        innerNonJdbc.initialize(environment, configuration);
++    }
++
++    @Override
++    public void close() {
++        innerJdbc.close();
++        innerNonJdbc.close();
++    }
+ }
+
+--- flyway-nc/flyway-nc-core/src/main/java/org/flywaydb/nc/NativeConnectorsJdbc.java (modified) ---
+additions: 7, deletions: 3, changes: 10
+@@ -142,9 +142,13 @@ public boolean isClosed() {
+     }
+ 
+     @Override
+-    public void close() throws Exception {
+-        if (!isClosed()) {
+-            connection.close();
++    public void close() {
++        try {
++            if (!isClosed()) {
++                connection.close();
++            }
++        } catch (Exception e) {
++            throw new FlywayException(e);
+         }
+     }
+ 
+
+--- flyway-nc/flyway-nc-core/src/main/java/org/flywaydb/nc/NativeConnectorsNonJdbc.java (modified) ---
+additions: 11, deletions: 0, changes: 11
+@@ -23,6 +23,7 @@
+ import org.flywaydb.nc.executors.NonJdbcExecutorExecutionUnit;
+ 
+ public abstract class NativeConnectorsNonJdbc extends AbstractNativeConnectorsDatabase<NonJdbcExecutorExecutionUnit> {
++    protected boolean isClosed;
+ 
+     /**
+      * By default, databases that use Batch to implement Transactions cannot support Batch, as it would cause a conflict.
+@@ -44,4 +45,14 @@ public boolean transactionAsBatch() {
+     public void doExecuteBatch() {
+ 
+     }
++
++    @Override
++    public boolean isClosed() {
++        return isClosed;
++    }
++
++    @Override
++    public void close() {
++        isClosed = true;
++    }
+ }
+
+--- flyway-nc/flyway-nc-core/src/main/java/org/flywaydb/nc/preparation/PreparationContext.java (modified) ---
+additions: 2, deletions: 1, changes: 3
+@@ -19,6 +19,7 @@
+  */
+ package org.flywaydb.nc.preparation;
+ 
++import static org.flywaydb.core.internal.util.TelemetryUtils.getTelemetryManager;
+ import static org.flywaydb.nc.utils.NativeConnectorsUtils.logExperimentalDataTelemetry;
+ 
+ import java.sql.SQLException;
+@@ -97,7 +98,7 @@ public void initialize(final Configuration configuration) {
+ 
+             schemaHistoryModel = (SchemaHistoryModel) getFromFuture(schemaHistoryModelFuture);
+ 
+-            CompletableFuture.runAsync(() -> logExperimentalDataTelemetry(NativeConnectorsUtils.getFlywayTelemetryManager(
++            CompletableFuture.runAsync(() -> logExperimentalDataTelemetry(getTelemetryManager(
+                 configuration), database.getDatabaseMetaData()));
+ 
+             cacheString = getCacheString(configuration);
+
+--- flyway-nc/flyway-nc-core/src/main/java/org/flywaydb/nc/utils/NativeConnectorsUtils.java (modified) ---
+additions: 5, deletions: 5, changes: 10
+@@ -29,16 +29,16 @@
+ public class NativeConnectorsUtils {
+     public static void logExperimentalDataTelemetry(final FlywayTelemetryManager flywayTelemetryManager, final MetaData metaData) {
+         if (flywayTelemetryManager != null) {
+-            flywayTelemetryManager.notifyExperimentalMetadataChanged(metaData);
++            flywayTelemetryManager.notifyDatabaseChanged(metaData.databaseType(),
++                metaData.version().toString(),
++                null);
++
++            flywayTelemetryManager.notifyExperimentalModeChanged(true);
+         }
+     }
+ 
+     public static Optional<NativeConnectorsDatabase> resolveExperimentalDatabasePlugin(final Configuration configuration) {
+         return new NativeConnectorsDatabasePluginResolverImpl(configuration.getPluginRegister())
+             .resolve(configuration);
+     }
+-
+-    public static FlywayTelemetryManager getFlywayTelemetryManager(final Configuration configuration) {
+-        return configuration.getPluginRegister().getInstanceOf(FlywayTelemetryManager.class);
+-    }
+ }
+
+--- flyway-nc/flyway-nc-scanners/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+ 
+
+--- flyway-nc/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-nc</artifactId>
+
+--- flyway-plugins/flyway-gradle-plugin/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <artifactId>flyway-gradle-plugin</artifactId>
+
+--- flyway-plugins/flyway-maven-plugin/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+     <relativePath>../../pom.xml</relativePath>
+   </parent>
+   <artifactId>flyway-maven-plugin</artifactId>
+
+--- flyway-plugins/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-plugins</artifactId>
+
+--- flyway-reports/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -6,7 +6,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+ 
+   <artifactId>flyway-reports</artifactId>
+
+--- flyway-reports/src/main/java/org/flywaydb/reports/html/HtmlReportGenerator.java (modified) ---
+additions: 84, deletions: 78, changes: 162
+@@ -19,48 +19,48 @@
+  */
+ package org.flywaydb.reports.html;
+ 
++import static org.flywaydb.core.internal.util.ClassUtils.getInstallDir;
++import static org.flywaydb.reports.utils.HtmlUtils.getFormattedTimestamp;
++
++import java.time.LocalDateTime;
++import java.time.format.DateTimeFormatter;
++import java.util.ArrayList;
++import java.util.Arrays;
+ import java.util.Collection;
++import java.util.Collections;
++import java.util.List;
+ import java.util.Locale;
++import java.util.Map;
+ import java.util.Objects;
++import java.util.stream.Collectors;
+ import lombok.CustomLog;
+ import lombok.experimental.ExtensionMethod;
+ import org.flywaydb.core.api.configuration.Configuration;
+-import org.flywaydb.reports.output.DashboardResult;
+-import org.flywaydb.reports.output.HoldingResult;
+-import org.flywaydb.core.api.output.HtmlResult;
+ import org.flywaydb.core.api.output.CompositeResult;
+-import org.flywaydb.reports.api.extensibility.HtmlRenderer;
+-import org.flywaydb.reports.api.extensibility.HtmlReportSummary;
++import org.flywaydb.core.api.output.HtmlResult;
+ import org.flywaydb.core.extensibility.LicenseGuard;
+ import org.flywaydb.core.extensibility.Tier;
++import org.flywaydb.core.internal.util.CollectionsUtils;
+ import org.flywaydb.core.internal.util.FileUtils;
+-
+-import java.time.LocalDateTime;
+-import java.time.format.DateTimeFormatter;
+-import java.util.ArrayList;
+-import java.util.Arrays;
+-import java.util.Collections;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.stream.Collectors;
+-
+-import static org.flywaydb.core.internal.util.ClassUtils.getInstallDir;
+-import static org.flywaydb.reports.utils.HtmlUtils.getFormattedTimestamp;
++import org.flywaydb.reports.api.extensibility.HtmlRenderer;
++import org.flywaydb.reports.api.extensibility.HtmlReportSummary;
++import org.flywaydb.reports.output.DashboardResult;
++import org.flywaydb.reports.output.HoldingResult;
+ 
+ @CustomLog
+ @ExtensionMethod(Tier.class)
+ public class HtmlReportGenerator {
+-    private static final List<HoldingTabMetadata> HOLDING_TAB_METADATA = Arrays.asList(
+-            new HoldingTabMetadata("changes", "ENTERPRISE"),
+-            new HoldingTabMetadata("drift", "ENTERPRISE"),
+-            new HoldingTabMetadata("migrate", "OSS"),
+-            new HoldingTabMetadata("dryrun", "TEAMS", "ENTERPRISE"),
+-            new HoldingTabMetadata("code", "OSS")
+-                                                                                      );
++    private static final List<HoldingTabMetadata> HOLDING_TAB_METADATA = Arrays.asList(new HoldingTabMetadata("changes",
++            "ENTERPRISE"),
++        new HoldingTabMetadata("drift", "ENTERPRISE"),
++        new HoldingTabMetadata("migrate", "OSS"),
++        new HoldingTabMetadata("dryrun", "TEAMS", "ENTERPRISE"),
++        new HoldingTabMetadata("code", "OSS"));
+     private static final String INSTALL_DIR = getInstallDir(HtmlReportGenerator.class);
+ 
+     public static String generateHtml(final CompositeResult<? extends HtmlResult> result, final Configuration config) {
+-        final Map<LocalDateTime, List<HtmlResult>> groupedResults = result.individualResults.stream().collect(Collectors.groupingBy(HtmlResult::getTimestamp));
++        final Map<LocalDateTime, List<HtmlResult>> groupedResults = result.individualResults.stream()
++            .collect(Collectors.groupingBy(HtmlResult::getTimestamp));
+         final List<LocalDateTime> timestamps = new ArrayList<>(groupedResults.keySet());
+ 
+         final StringBuilder content = new StringBuilder(getBeginning(timestamps));
+@@ -84,7 +84,8 @@ public static String generateHtml(final CompositeResult<? extends HtmlResult> re
+                 }
+             }
+ 
+-            final String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT));
++            final String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss",
++                Locale.ROOT));
+             content.append(getPage(formattedTimestamp, htmlResults, config));
+         }
+ 
+@@ -126,47 +127,46 @@ private static Collection<HoldingResult> getHoldingResults(final Collection<? ex
+     }
+ 
+     private static String getBeginning(final List<LocalDateTime> timestamps) {
+-        return "<!doctype html>\n" +
+-                "<html lang=\"en\">\n" +
+-                "<head><meta charset=\"utf-8\">\n" +
+-                "<style>\n" +
+-                getCodeStyle() +
+-                "</style>\n</head>\n" +
+-                "<body>\n" +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/AddFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Calendar.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/CheckFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ClockOutlined.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Database.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/DeleteFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Document.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/EditFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ErrorFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/FeedbackOutlined.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/flyway-upgrade-icon.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/InfoOutlined.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/PipelineFilled.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ScriptOutlined.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/upgrade.svg") +
+-                FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/WarningFilled.svg") +
+-                " <div class=\"container\">" +
+-                "  <div class=\"header\">" +
+-                "    <div class=\"flywayLogo headerElement\"></div>\n" +
+-                "    <div class=\"headerElement leftPaddedElement\">Flyway Reports</div>" +
+-                //"    <div class=\"headerElement redgateBanner\">" +
+-                "      <div class=\"redgateText\"><a class='unstyledLink' href='https://www.redgate.com'>redgate</a></div>" +
+-                //"    </div>" +
+-                "  </div>\n" +
+-                "  <div class=\"content\">\n" +
+-                getDropdown(timestamps);
++        return "<!doctype html>\n"
++            + "<html lang=\"en\">\n"
++            + "<head><meta charset=\"utf-8\">\n"
++            + "<style>\n"
++            + getCodeStyle()
++            + "</style>\n</head>\n"
++            + "<body>\n"
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/AddFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Calendar.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/CheckFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ClockOutlined.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Database.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/DeleteFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/Document.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/EditFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ErrorFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/FeedbackOutlined.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/flyway-upgrade-icon.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/InfoOutlined.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/PipelineFilled.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/ScriptOutlined.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/upgrade.svg")
++            + FileUtils.readAsStringFallbackToResource(INSTALL_DIR, "assets/report/icons/WarningFilled.svg")
++            + " <div class=\"container\">"
++            + "  <div class=\"header\">"
++            + "    <div class=\"flywayLogo headerElement\"></div>\n"
++            + "    <div class=\"headerElement leftPaddedElement\">Flyway Reports</div>"
++            + "      <div class=\"redgateText\"><a class='unstyledLink' href='https://www.redgate.com'>redgate</a></div>"
++            + "  </div>\n"
++            + "  <div class=\"content\">\n"
++            + getDropdown(timestamps);
+     }
+ 
+     private static String getDropdown(final List<LocalDateTime> timestamps) {
+         Collections.sort(timestamps);
+ 
+         final StringBuilder options = new StringBuilder();
+         for (int i = 0; i < timestamps.size(); i++) {
+-            final String timestamp = timestamps.get(i).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT));
++            final String timestamp = timestamps.get(i)
++                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT));
+ 
+             options.append("<option value=\"").append(timestamp).append("\"");
+ 
+@@ -177,12 +177,12 @@ private static String getDropdown(final List<LocalDateTime> timestamps) {
+             options.append(">").append(timestamp).append("</option>\n");
+         }
+ 
+-        return "<div class=\"dropdown\">\n" +
+-                "<label for=\"dropdown\">Report generated:</label>\n" +
+-                "<select onchange=\"onTimestampClick(event, this.value)\" id=\"dropdown\">\n" +
+-                options +
+-                "</select>\n" +
+-                "</div>\n";
++        return "<div class=\"dropdown\">\n"
++            + "<label for=\"dropdown\">Report generated:</label>\n"
++            + "<select onchange=\"onTimestampClick(event, this.value)\" id=\"dropdown\">\n"
++            + options
++            + "</select>\n"
++            + "</div>\n";
+     }
+ 
+     public static HtmlRenderer<HtmlResult> getRenderer(final HtmlResult htmlResult, final Configuration config) {
+@@ -201,7 +201,9 @@ public static HtmlRenderer<HtmlResult> getRenderer(final HtmlResult htmlResult,
+         return result;
+     }
+ 
+-    private static String getPage(final String timestamp, final Iterable<? extends HtmlResult> results, final Configuration config) {
++    private static String getPage(final String timestamp,
++        final Iterable<? extends HtmlResult> results,
++        final Configuration config) {
+         final StringBuilder content = new StringBuilder();
+ 
+         content.append("<div class=\"page ").append(timestamp).append("\">\n");
+@@ -221,11 +223,8 @@ private static String getTabs(final Iterable<? extends HtmlResult> result, final
+         int tabCount = 0;
+         for (final HtmlResult htmlResult : result) {
+             final String id2 = htmlResult.getOperation() + "-" + tabCount + "_" + getFormattedTimestamp(htmlResult);
+-            final StringBuilder button = new StringBuilder("<button class=\"tab\" onclick=\"onTabClick(event, '")
+-                .append(getTabId(htmlResult, config, tabCount))
+-                .append("','")
+-                .append(id2)
+-                .append("')\"");
++            final StringBuilder button = new StringBuilder("<button class=\"tab\" onclick=\"onTabClick(event, '").append(
++                getTabId(htmlResult, config, tabCount)).append("','").append(id2).append("')\"");
+             button.append(" id=\"").append(id2).append("\">");
+             String tabTitle = "";
+             final HtmlRenderer<HtmlResult> correctRenderer = getRenderer(htmlResult, config);
+@@ -240,13 +239,14 @@ private static String getTabs(final Iterable<? extends HtmlResult> result, final
+ 
+     private static String renderTab(final HtmlResult result, final Configuration config, final int tabCount) {
+         final HtmlRenderer<HtmlResult> renderer = getRenderer(result, config);
+-        return getTabOpening(result, config, tabCount) + renderTabSummary(result, config) + renderer.render(result, config) + getTabEnding(result);
++        return getTabOpening(result, config, tabCount) + renderTabSummary(result, config) + renderer.render(result,
++            config) + getTabEnding(result);
+     }
+ 
+     private static String renderTabSummary(final HtmlResult result, final Configuration config) {
+         final HtmlRenderer<HtmlResult> renderer = getRenderer(result, config);
+         final List<HtmlReportSummary> summaries = renderer.getHtmlSummary(result, config);
+-        if (summaries == null) {
++        if (!CollectionsUtils.hasItems(summaries)) {
+             return "";
+         }
+         final StringBuilder html = new StringBuilder("<div class='summaryHeader'>");
+@@ -272,16 +272,22 @@ private static String getTabOpening(final HtmlResult result, final Configuration
+     private static String getTabEnding(final HtmlResult result) {
+         String htmlResult = "";
+         if (result.getException() != null) {
+-            htmlResult += "<div class=\"error\">\n" +
+-                    "<pre class=\"exception\">Flyway Exception: " + result.getException() + "</pre>\n" +
+-                    "</div>\n";
++            htmlResult += "<div class=\"error\">\n"
++                + "<pre class=\"exception\">Flyway Exception: "
++                + result.getException()
++                + "</pre>\n"
++                + "</div>\n";
+         }
+         return htmlResult + "</div>\n";
+     }
+ 
+     public static String getTabId(final HtmlResult result, final Configuration config, final int tabCount) {
+         final HtmlRenderer<HtmlResult> correctRenderer = getRenderer(result, config);
+-        return (correctRenderer.tabTitle(result, config) + "_" + tabCount + "_" + getFormattedTimestamp(result)).replace(" ", "");
++        return (correctRenderer.tabTitle(result, config)
++            + "_"
++            + tabCount
++            + "_"
++            + getFormattedTimestamp(result)).replace(" ", "");
+     }
+ 
+     private static String getEnd() {
+
+--- flyway-reports/src/main/java/org/flywaydb/reports/output/DashboardRenderer.java (modified) ---
+additions: 9, deletions: 7, changes: 16
+@@ -19,16 +19,16 @@
+  */
+ package org.flywaydb.reports.output;
+ 
++import static org.flywaydb.reports.utils.HtmlUtils.getFormattedTimestamp;
++
++import java.util.List;
+ import org.flywaydb.core.api.configuration.Configuration;
+ import org.flywaydb.core.api.output.HtmlResult;
++import org.flywaydb.core.internal.util.CollectionsUtils;
+ import org.flywaydb.reports.api.extensibility.HtmlRenderer;
+ import org.flywaydb.reports.api.extensibility.HtmlReportSummary;
+ import org.flywaydb.reports.html.HtmlReportGenerator;
+ 
+-import java.util.List;
+-
+-import static org.flywaydb.reports.utils.HtmlUtils.getFormattedTimestamp;
+-
+ public class DashboardRenderer implements HtmlRenderer<DashboardResult> {
+     @Override
+     public String render(final DashboardResult result, final Configuration config) {
+@@ -40,9 +40,10 @@ public String render(final DashboardResult result, final Configuration config) {
+ 
+                 final HtmlRenderer<HtmlResult> resultRenderer = HtmlReportGenerator.getRenderer(htmlResult, config);
+                 final List<HtmlReportSummary> summaries = resultRenderer.getHtmlSummary(htmlResult, config);
+-                if (summaries != null) {
++                if (CollectionsUtils.hasItems(summaries)) {
+                     final List<HtmlReportSummary> filteredSummaries = summaries.stream()
+-                        .filter(x -> !x.getCssClass().contains("summaryNote")).toList();
++                        .filter(x -> !x.getCssClass().contains("summaryNote"))
++                        .toList();
+                     html.append("<div class='dashboardSummaryGroup'>");
+                     html.append("<h5>").append(resultRenderer.tabTitle(htmlResult, config)).append("</h5>");
+                     for (final HtmlReportSummary s : filteredSummaries) {
+@@ -55,7 +56,8 @@ public String render(final DashboardResult result, final Configuration config) {
+                             .append(s.getSummaryText())
+                             .append("</span></div></div>");
+                     }
+-                    final String id2 = htmlResult.getOperation() + "-" + tabCount + "_" + getFormattedTimestamp(htmlResult);
++                    final String id2 = htmlResult.getOperation() + "-" + tabCount + "_" + getFormattedTimestamp(
++                        htmlResult);
+                     html.append("<button class='clickable inspectButton fancyButton' onclick=\"onTabClick(event, '")
+                         .append(HtmlReportGenerator.getTabId(htmlResult, config, tabCount))
+                         .append("','")
+
+--- flyway-shades/pom.xml (modified) ---
+additions: 1, deletions: 1, changes: 2
+@@ -4,7 +4,7 @@
+   <parent>
+     <groupId>org.flywaydb</groupId>
+     <artifactId>flyway-parent</artifactId>
+-    <version>11.18.0</version>
++    <version>11.19.0</version>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+ 
+
+--- pom.xml (modified) ---
+additions: 7, deletions: 2, changes: 9
+@@ -20,7 +20,7 @@
+   <modelVersion>4.0.0</modelVersion>
+   <groupId>org.flywaydb</groupId>
+   <artifactId>flyway-parent</artifactId>
+-  <version>11.18.0</version>
++  <version>11.19.0</version>
+   <packaging>pom</packaging>
+   <name>${project.artifactId}</name>
+   <description>Flyway: Database Migrations Made Easy.</description>
+@@ -92,7 +92,6 @@
+ 
+ 
+ 
+-
+ 
+ 
+   </modules>
+@@ -169,6 +168,7 @@
+     <version.maven>3.9.6</version.maven>
+     <version.mockito>5.18.0</version.mockito>
+     <version.mockserver>5.15.0</version.mockserver>
++    <version.mongodb>5.6.1</version.mongodb>
+     <version.msal4j>1.20.0</version.msal4j>
+     <version.msal4j-persistence>1.3.0</version.msal4j-persistence>
+     <version.mssql>12.10.2</version.mssql>
+@@ -526,6 +526,11 @@
+         <artifactId>msal4j-persistence-extension</artifactId>
+         <version>${version.msal4j-persistence}</version>
+       </dependency>
++      <dependency>
++        <groupId>org.mongodb</groupId>
++        <artifactId>mongodb-driver-sync</artifactId>
++        <version>${version.mongodb}</version>
++      </dependency>
+ 
+ 
+ 
+

@@ -1,0 +1,36 @@
+# FALSE NEGATIVE: apereo/cas
+# SHA: d0024e28889e597c03a059296f35a4360c5b11e6
+# Our Score: 5
+# Score 5, but this commit introduced a bug
+# GitHub: https://github.com/apereo/cas/commit/d0024e28889e597c03a059296f35a4360c5b11e6
+
+Commit message: Fixed issue with TicketRegistryCleaner schedule (#3431)
+
+* Fixed issue with TicketRegistryCleaner schedule
+
+If the schedule method throws an exception, it will stop the schedule
+from ever running again.  Catching this exception here fixes this issue
+from ever occurring.  This case can happen if the
+lockingStrategy.release() within the DefaultTicketRegistryCleaner throws
+an exception which has happened for us a few times causing this problem.
+
+* Modified logic to match ci rules
+
+Modified logic to match ci rules including adding final and changing to Exception
+
+--- core/cas-server-core-tickets/src/main/java/org/apereo/cas/config/CasCoreTicketsSchedulingConfiguration.java (modified) ---
+additions: 5, deletions: 1, changes: 6
+@@ -87,7 +87,11 @@ public TicketRegistryCleanerScheduler(final TicketRegistryCleaner ticketRegistry
+         @Scheduled(initialDelayString = "${cas.ticket.registry.cleaner.schedule.startDelay:PT30S}",
+             fixedDelayString = "${cas.ticket.registry.cleaner.schedule.repeatInterval:PT120S}")
+         public void run() {
+-            this.ticketRegistryCleaner.clean();
++            try {
++                this.ticketRegistryCleaner.clean();
++            } catch (final Exception e) {
++                LOGGER.error(e.getMessage(), e);
++            }
+         }
+     }
+ }
+
