@@ -19,4 +19,24 @@ npm start -- owner/repo#123 -v    # Verbose mode with factors
 npm install
 ```
 
-Requires GitHub CLI (`gh`) to be installed and authenticated for token access.
+## Authentication
+
+Provide a GitHub token in one of these ways:
+
+1. **Environment variable** (recommended):
+   ```bash
+   export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+   ```
+
+2. **Command line flag**:
+   ```bash
+   npm start -- --token ghp_xxxxxxxxxxxx owner/repo#123
+   ```
+
+3. **GitHub CLI** (if installed):
+   ```bash
+   gh auth login
+   ```
+
+To create a token: https://github.com/settings/tokens
+Required scope: `repo` (private repos) or `public_repo` (public only)
