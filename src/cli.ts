@@ -98,7 +98,24 @@ async function main() {
       const token = options.token ?? getGitHubToken();
 
       if (!token) {
-        console.error("Error: GitHub token required. Use --token, set GITHUB_TOKEN, or login with 'gh auth login'.");
+        console.error(`
+Error: GitHub token required.
+
+You can provide a token in one of these ways:
+
+  1. Set the GITHUB_TOKEN environment variable:
+     export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+
+  2. Pass it directly:
+     reviewless --token ghp_xxxxxxxxxxxx owner/repo#123
+
+  3. Install GitHub CLI and authenticate:
+     brew install gh   # or: https://cli.github.com
+     gh auth login
+
+To create a token, visit: https://github.com/settings/tokens
+Required scope: 'repo' (for private repos) or 'public_repo' (for public repos only)
+`);
         process.exit(1);
       }
 
