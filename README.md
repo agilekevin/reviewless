@@ -2,22 +2,30 @@
 
 PR Review Priority Analyzer - helps prioritize which files in a PR need the most careful review.
 
+## Quick Start
+
+```bash
+# Run directly from GitHub (no install needed)
+npx github:agilekevin/reviewless owner/repo#123
+
+# With verbose output
+npx github:agilekevin/reviewless owner/repo#123 -v
+```
+
+Requires `GITHUB_TOKEN` environment variable or GitHub CLI (`gh auth login`).
+
+## Local Development
+
+```bash
+git clone https://github.com/agilekevin/reviewless.git
+cd reviewless
+npm install
+npm start -- owner/repo#123
+```
+
 ## Design Doc
 
 https://docs.google.com/document/d/1n3ts3zwVsQ9jRC-0rnE67XilJ6gwbY__pcpTgFM02iU/edit?usp=sharing
-
-## Usage
-
-```bash
-npm start -- owner/repo#123       # Analyze a PR
-npm start -- owner/repo#123 -v    # Verbose mode with factors
-```
-
-## Installation
-
-```bash
-npm install
-```
 
 ## Authentication
 
