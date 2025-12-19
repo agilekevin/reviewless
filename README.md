@@ -25,7 +25,7 @@ npm start -- owner/repo#123
 
 ## Design Doc
 
-https://docs.google.com/document/d/1n3ts3zwVsQ9jRC-0rnE67XilJ6gwbY__pcpTgFM02iU/edit?usp=sharing
+https://medium.com/@kevinklinemeier/review-less-code-3579add38b31?postPublishedType=initial
 
 ## Authentication
 
