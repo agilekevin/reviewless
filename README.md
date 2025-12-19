@@ -2,6 +2,9 @@
 
 PR Review Priority Analyzer - helps prioritize which files in a PR need the most careful review.
 
+See more rationale at:
+https://medium.com/@kevinklinemeier/review-less-code-3579add38b31?postPublishedType=initial
+
 ## Quick Start
 
 ```bash
@@ -22,10 +25,6 @@ cd reviewless
 npm install
 npm start -- owner/repo#123
 ```
-
-## Design Doc
-
-https://medium.com/@kevinklinemeier/review-less-code-3579add38b31?postPublishedType=initial
 
 ## Authentication
 
